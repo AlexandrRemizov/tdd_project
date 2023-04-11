@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "tdd-test"
+name = "tdd-project"
 version = "0.1.0"
 description = "Testing project on FastAPI and SQLAlchemy"
 authors = ["Alexandr Remizov <ALVRem@mail.ru>"]
