@@ -1,15 +1,16 @@
 [tool.poetry]
-name = "tdd-project"
+name = "project"
 version = "0.1.0"
 description = "Testing project on FastAPI and SQLAlchemy"
 authors = ["Alexandr Remizov <ALVRem@mail.ru>"]
 readme = "README.md"
-packages = [{include = "tdd_test"}]
+
 
 [tool.poetry.dependencies]
 python = "3.11.2"
 fastapi = "0.94.1"
 uvicorn = "0.21.1"
+asyncpg = "^0.27.0"
 
 
 [build-system]
