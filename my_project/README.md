@@ -1,32 +1,44 @@
 # tdd_project
-Для создания Dockerfile для Python проекта с пакетным менеджером Poetry можно использовать следующий шаблон:
+Код с использованием SQLAlchemy ORM:
 
 ```
-FROM python:3.9-slim-buster
+from fastapi import FastAPI, Depends
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker, declarative_base
+from fastapi_sqlalchemy import DBSessionMiddleware, db
 
-WORKDIR /app
+from app.config import get_settings, Settings
+from app.models.sqlalchemy import Base
 
-COPY pyproject.toml poetry.lock ./
-RUN pip install --upgrade pip && pip install poetry && poetry config virtualenvs.create false && poetry install --no-interaction --no-ansi
 
-COPY . /app
+app = FastAPI()
 
-CMD ["python", "app.py"]
+engine = create_async_engine(os.environ.get("DATABASE_URL"))
+async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+Base.metadata.create_all(bind=engine)
+
+
+@app.middleware("http")
+async def db_session_middleware(request, call_next):
+    async with async_session() as session:
+        async with db.SessionLocal(session) as db_session:
+            request.state.db = db_session
+            response = await call_next(request)
+    return response
+
+
+@app.get("/ping")
+async def pong(settings: Settings = Depends(get_settings)):
+    return {
+        "ping": "pong!",
+        "environment": settings.environment,
+        "testing": settings.testing
+    }
 ```
-Рассмотрим по порядку, как оно работает:
 
-1. С помощью команды `FROM python:3.9-slim-buster` устанавливается базовый образ, тут мы используем версию Python 3.9 на базе операционной системы Debian Buster.
+Здесь мы создаем асинхронный движок SQLAlchemy 
+и сессию в `create_async_engine()` и `sessionmaker()`,
+соответственно. Затем мы создаем экземпляр `Base` на 
+основе схемы SQLAlchemy, которая будет использоваться в
+наших определениях моделей.
 
-2. С помощью команды `WORKDIR /app` устанавливается рабочая директория `/app` для образа.
-
-3. Команда `COPY pyproject.toml poetry.lock ./` копирует файлы `pyproject.toml` и `poetry.lock` внутрь Docker-контейнера.
-
-4. С помощью команды `RUN pip install --upgrade pip && pip install poetry && poetry config virtualenvs.create false && poetry install --no-interaction --no-ansi` устанавливается Poetry и необходимые зависимости из файла pyproject.toml. Опции `--no-interaction` и `--no-ansi` позволяют установить зависимости без запросов в интерактивном режиме и без цветовых выделений текста соответственно.
-
-5. Команда `COPY . /app` копирует все файлы из текущей директории внутрь Docker-контейнера.
-
-6. Команда `CMD ["python", "app.py"]` запускает файл `app.py` при запуске контейнера. Укажите свой файл запуска приложения.
-
-Обратите внимание, что если вы используете файл `.env` для хранения конфиденциальных данных, его необходимо скопировать в Docker-контейнер так же, как и другие файлы, используя команду `COPY .env /app/`.
-
-Для запуска приложения с помощью Dockerfile используйте команду `docker build -t <tag_name> .` для сборки образа Docker, где `tag_name` - это имя образа, а `.` - текущая директория. После успешной сборки можно запустить образ приложения командой `docker run -p 8000:8000 <tag_name>`.
