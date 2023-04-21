@@ -4,7 +4,7 @@ from sqlalchemy import Column, Integer, String, Text, DateTime
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import declarative_base
 
-engine = create_async_engine("postgresql+asyncpg://postgres:postgres@web-db:5432/web_dev")
+engine = create_async_engine(os.environ.get("DATABASE_URL"))
 
 Base = declarative_base()
 

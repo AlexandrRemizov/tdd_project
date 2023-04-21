@@ -7,23 +7,15 @@ from .models.alchemy import Base
 from .models.alchemy import engine
 from .config import get_settings, Settings
 from .models.alchemy import Base
-
-app = FastAPI()
-
-
-#async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+from app.api import ping
 
 
-#@app.on_event("startup")
-#async def create_table():
-#    async with engine.begin() as conn:
-#        await conn.run_sync(Base.metadata.create_all)
+def create_application() -> FastAPI:
+    application = FastAPI()
+
+    application.include_router(ping.router)
+
+    return application
 
 
-@app.get("/ping")
-def pong(settings: Settings = Depends(get_settings)):
-    return {
-        "ping": "pong!",
-        "environment": settings.environment,
-        "testing": settings.testing,
-    }
+app = create_application()
