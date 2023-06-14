@@ -19,3 +19,15 @@ def test_app():
     with TestClient(app) as test_client:
         # testing
         yield test_client
+
+
+@pytest.fixture(scope="module")
+def test_app_with_db():
+    app = create_application()
+    app.dependency_overrides[get_settings] = get_settings_override
+
+    with TestClient(app) as test_client:
+
+
+            yield test_client
+
